@@ -7,6 +7,7 @@
 body {
     font-family: Arial, sans-serif;
     overflow: hidden;
+    background-color: #e5e7eb;
 }
 
 #header {
@@ -19,6 +20,7 @@ body {
     font-weight: bold;
     font-size: 14px;
     letter-spacing: 0.5px;
+    text-transform: lowercase;
 }
 
 #container {
@@ -27,56 +29,19 @@ body {
 }
 
 #map {
-    flex: 3;
-    height: 100%;
-}
-
-#sidebar {
     flex: 1;
-    background: #f3f4f6;
-    border-left: 1px solid #ddd;
-    overflow-y: auto;
-    padding: 15px;
-    display: flex;
-    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    background-color: #cff0a3; 
 }
 
-#sidebar h3 {
-    font-size: 16px;
-    margin-bottom: 12px;
-    color: #374151;
-    border-bottom: 2px solid #e5e7eb;
-    padding-bottom: 5px;
-}
-
-#log {
-    font-size: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.log-item {
-    background: white;
-    padding: 8px 10px;
-    border-radius: 4px;
-    border: 1px solid #e5e7eb;
-    line-height: 1.4;
-    color: #4b5563;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
-}
-
-/* ===== HIGH-QUALITY AUTOMATIC SIDE-BY-SIDE MARKERS ===== */
-
+/* ===== ENGINE RENDERING BENCHMARKS ===== */
 .marker-cluster {
     display: flex;
     flex-direction: row; 
-    gap: 8px;            
     justify-content: center;
-    align-items: flex-end;
+    align-items: center;
     pointer-events: none;
-    
-    /* Force high-quality 3D vector rendering layers across map pans */
     transform-style: preserve-3d;
     backface-visibility: hidden;
 }
@@ -88,38 +53,68 @@ body {
     pointer-events: auto;
 }
 
-.avatar {
-    width: 120px;
-    height: 120px;
+/* ===== GREY RE-CALIBRATED TARGET DOTS (+20% SIZE) ===== */
+.experimental-grey-letter-dot {
+    width: 40px;  
+    height: 40px; 
+    background-color: #91a3ce; 
+    border: 2px solid #ffffff;  
     border-radius: 50%;
-    border: 2px solid white;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-    background-color: #ccc;
-    
-    /* Prevents face distortion if images aren't perfect squares */
-    object-fit: cover;
-    object-position: center;
-
-    /* Disables the browser's aggressive filtering blur during downscaling */
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: crisp-edges;
-    image-rendering: pixelated; 
-    
-    /* Stops map engines from converting DOM markers into blurry low-res rasters */
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
     transform: translate3d(0, 0, 0);
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-    will-change: transform;
+    
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: #ffffff; 
 }
 
-.label {
-    font-size: 11px;
-    font-weight: bold;
-    background: white;
-    padding: 2px 6px;
-    border-radius: 4px;
-    margin-top: 4px;
-    color: black;
-    white-space: nowrap;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+/* ===== BLUE MAIN CHARACTER DESIGN LAYER ===== */
+.google-maps-dot-container {
+    position: relative;
+    width: 66px;   
+    height: 36px;  
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.google-maps-core {
+    width: 23px;  
+    height: 23px; 
+    background-color: #1a73e8; 
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+    position: absolute;
+    z-index: 2;
+}
+
+.google-maps-pulse {
+    width: 58px;   
+    height: 58px;  
+    background-color: rgba(26, 115, 232, 0.25);
+    border-radius: 50%;
+    position: absolute;
+    z-index: 1;
+    transform: scale(0.35);
+    animation: googleMapsBreath 2.2s ease-in-out infinite;
+    will-change: transform, opacity;
+}
+
+@keyframes googleMapsBreath {
+    0% {
+        transform: scale(0.35);
+        opacity: 0.1;
+    }
+    50% {
+        transform: scale(1.0);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(0.35);
+        opacity: 0.1;
+    }
 }
