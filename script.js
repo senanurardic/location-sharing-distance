@@ -1,13 +1,13 @@
 // ============================
-// CALIBRATED MAP CONFIGURATION (ZOOM 13.0)
+// CALIBRATED MAP CONFIGURATION (ZOOM: 13.9)
 // ============================
 const map = new maplibregl.Map({
     container: 'map',
     style: 'https://tiles.openfreemap.org/styles/liberty',
     center: [9.2123, 45.4824], 
-    zoom: 13.0,                
-    minZoom: 13.0,             
-    maxZoom: 13.0,             
+    zoom: 13.9,                
+    minZoom: 13.9,             
+    maxZoom: 13.9,             
     
     // EXPERIMENTAL CONTROLS: FIXED VIEWPORT MATRIX
     dragPan: false,            
@@ -20,51 +20,45 @@ const map = new maplibregl.Map({
 });
 
 // ============================
-// GREEN-GREY MAP DESATURATION FILTER
-// ============================
-map.on('style.load', () => {
-    const mapCanvas = map.getCanvas();
-    mapCanvas.style.filter = 'grayscale(0.6) contrast(1.1) brightness(0.95) hue-rotate(25deg)';
-});
-
-// ============================
 // EXACT EXTRACTED KML COORDINATE NODES (START POSITIONS)
 // ============================
 const startPositions = {
-    leftNode:  [9.203801, 45.483950], // Top-Left Vertex ("G") 
-    rightNode: [9.216763, 45.486383], // Top-Right Vertex ("M") 
-    mainNode:  [9.217046, 45.476790]  // Main Bottom Vertex (Blue Pulse) 
+    leftNode:  [9.203801, 45.483950], // Agent "G"
+    rightNode: [9.216763, 45.486383], // Agent "M"
+    mainNode:  [9.217046, 45.476790]  // Main Subject (Blue Pulse - STABLE) 
 };
 
 // ============================
-// REAL COHESION TARGET COORDINATES (VIA PALMANOVA CORRIDOR)
+// CALIBRATED TWO-STAGE INTERPOLATION VECTOR
 // ============================
-const targetPositions = {
-    leftNode:  [9.185900, 45.487200], // G için Isola Kavşağı (Piazzale Lagosta / Isola)
-    rightNode: [9.239500, 45.498800]  // M için Via Palmanova ana arter giriş hattı
-};
+const startG = startPositions.leftNode;
+const startM = startPositions.rightNode;
+
+// Stage 1 Target: Midpoint convergence
+const midLng = (startG[0] + startM[0]) / 2;
+const midLat = (startG[1] + startM[1]) / 2;
+
+const offsetPercent = 0.04; 
+const deltaLng = startM[0] - startG[0];
+const deltaLat = startM[1] - startG[1];
+
+const midTargetG = [midLng - (deltaLng * offsetPercent), midLat - (deltaLat * offsetPercent)];
+const midTargetM = [midLng + (deltaLng * offsetPercent), midLat + (deltaLat * offsetPercent)];
+
+// Stage 2 Target: Joint displacement strictly NORTH (Calibrated distance for slower speed)
+const escapeDeltaLng = 0.000000; 
+const escapeDeltaLat = 0.004500; // Reduced from 0.012000 to drastically slow down the speed
+
+const finalTargetG = [midTargetG[0] + escapeDeltaLng, midTargetG[1] + escapeDeltaLat];
+const finalTargetM = [midTargetM[0] + escapeDeltaLng, midTargetM[1] + escapeDeltaLat];
 
 // ============================
 // EXPERIMENT SUBJECTS CONFIGURATION
 // ============================
 const people = [
-    {
-        id: "leftNode",
-        markerType: "grey-letter-dot",
-        initial: "G",
-        instance: null
-    },
-    {
-        id: "rightNode",
-        markerType: "grey-letter-dot",
-        initial: "M",
-        instance: null
-    },
-    {
-        id: "mainNode",
-        markerType: "blue-pulse-dot",
-        instance: null
-    }
+    { id: "leftNode", markerType: "grey-letter-dot", initial: "G", instance: null },
+    { id: "rightNode", markerType: "grey-letter-dot", initial: "M", instance: null },
+    { id: "mainNode", markerType: "blue-pulse-dot", instance: null }
 ];
 
 // ============================
@@ -114,56 +108,68 @@ function initMarkers() {
 }
 
 // ============================
-// COHESION INTERPOLATION ENGINE (10s - 120s)
+// TWO-STAGE INTERPOLATION TIMELINE ENGINE
 // ============================
 let startTime = null;
-const animationDuration = 110; // 120 - 10 = 110 saniye hareket süresi
+const DELAY_DURATION = 5;      // 5 seconds baseline delay
+const PHASE_DIVIDER = 20;      // 5s baseline + 15s convergence = 20 seconds point
+const TOTAL_DURATION = 30;     // 20s point + 10s joint escape = 30 seconds total absolute completion
 
 function animateCohesion(timestamp) {
     if (!startTime) startTime = timestamp;
     const elapsedSeconds = (timestamp - startTime) / 1000;
 
-    // İlk 10 saniye başlangıç konumlarında sabit bekleme
-    if (elapsedSeconds < 10) {
+    // PHASE 1: Baseline stabilization timeline (0s - 5s)
+    if (elapsedSeconds < DELAY_DURATION) {
         people.forEach(person => {
             if (person.instance) person.instance.setLngLat(startPositions[person.id]);
         });
     }
-    // 10. ve 120. saniyeler arası hedeflere doğru doğrusal (lineer) ilerleme
-    else if (elapsedSeconds >= 10 && elapsedSeconds <= 120) {
-        const progress = (elapsedSeconds - 10) / animationDuration;
+    // PHASE 2: Trajectory convergence to midpoint (5s - 20s -> 15 seconds duration)
+    else if (elapsedSeconds >= DELAY_DURATION && elapsedSeconds < PHASE_DIVIDER) {
+        const progress = (elapsedSeconds - DELAY_DURATION) / (PHASE_DIVIDER - DELAY_DURATION);
 
-        people.forEach(person => {
-            if (person.id === "leftNode" || person.id === "rightNode") {
-                const startLng = startPositions[person.id][0];
-                const startLat = startPositions[person.id][1];
-                const targetLng = targetPositions[person.id][0];
-                const targetLat = targetPositions[person.id][1];
+        const currentG_Lng = startG[0] + (midTargetG[0] - startG[0]) * progress;
+        const currentG_Lat = startG[1] + (midTargetG[1] - startG[1]) * progress;
+        if (people[0].instance) people[0].instance.setLngLat([currentG_Lng, currentG_Lat]);
 
-                const currentLng = startLng + (targetLng - startLng) * progress;
-                const currentLat = startLat + (targetLat - startLat) * progress;
+        const currentM_Lng = startM[0] + (midTargetM[0] - startM[0]) * progress;
+        const currentM_Lat = startM[1] + (midTargetM[1] - startM[1]) * progress;
+        if (people[1].instance) people[1].instance.setLngLat([currentM_Lng, currentM_Lat]);
 
-                if (person.instance) {
-                    person.instance.setLngLat([currentLng, currentLat]);
-                }
-            }
-        });
+        if (people[2].instance) people[2].instance.setLngLat(startPositions.mainNode);
     }
-    // 120. saniyeden sonra tam varış noktalarında sabit kalıp döngüyü bitirme
-    else if (elapsedSeconds > 120) {
-        people.forEach(person => {
-            if (person.id === "leftNode" || person.id === "rightNode") {
-                if (person.instance) person.instance.setLngLat(targetPositions[person.id]);
-            }
-        });
+    // PHASE 3: Cohesive exclusion trajectory straight UPWARD (20s - 30s -> 10 seconds duration)
+    else if (elapsedSeconds >= PHASE_DIVIDER && elapsedSeconds <= TOTAL_DURATION) {
+        const progress = (elapsedSeconds - PHASE_DIVIDER) / (TOTAL_DURATION - PHASE_DIVIDER);
+
+        const currentG_Lng = midTargetG[0] + (finalTargetG[0] - midTargetG[0]) * progress;
+        const currentG_Lat = midTargetG[1] + (finalTargetG[1] - midTargetG[1]) * progress;
+        if (people[0].instance) people[0].instance.setLngLat([currentG_Lng, currentG_Lat]);
+
+        const currentM_Lng = midTargetM[0] + (finalTargetM[0] - midTargetM[0]) * progress;
+        const currentM_Lat = midTargetM[1] + (finalTargetM[1] - midTargetM[1]) * progress;
+        if (people[1].instance) people[1].instance.setLngLat([currentM_Lng, currentM_Lat]);
+
+        if (people[2].instance) people[2].instance.setLngLat(startPositions.mainNode);
+    }
+    // PHASE 4: Post-termination freeze matrix (Post 30s)
+    else if (elapsedSeconds > TOTAL_DURATION) {
+        if (people[0].instance) people[0].instance.setLngLat(finalTargetG);
+        if (people[1].instance) people[1].instance.setLngLat(finalTargetM);
+        if (people[2].instance) people[2].instance.setLngLat(startPositions.mainNode);
         return; 
     }
 
     requestAnimationFrame(animateCohesion);
 }
 
-// Harita tamamen hazır olduğunda sistemi tetikle
-map.on('load', () => {
+// SAFE UNIFIED EVENT INTERACTION
+map.on('style.load', () => {
+    const mapCanvas = map.getCanvas();
+    if (mapCanvas) {
+        mapCanvas.style.filter = 'grayscale(0.6) contrast(1.1) brightness(0.95)';
+    }
     initMarkers();
     requestAnimationFrame(animateCohesion);
 });
