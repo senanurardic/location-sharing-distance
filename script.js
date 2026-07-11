@@ -95,8 +95,8 @@ initMarkers();
 // ============================
 const DELAY_DURATION = 5 * 1000;       // 5 seconds stable
 const CONVERGE_DURATION = 10 * 1000;   // 10 seconds convergence window
-const ESCAPE_DURATION = 15 * 1000;     // 15 seconds northward translation window
-const TOTAL_DURATION = DELAY_DURATION + CONVERGE_DURATION + ESCAPE_DURATION; 
+const ESCAPE_DURATION = 10 * 1000;     // 10 seconds northward translation window (Reduced from 15s to hit exactly 25s total)
+const TOTAL_DURATION = DELAY_DURATION + CONVERGE_DURATION + ESCAPE_DURATION; // Total: 25 seconds
 
 const startG = positions.leftNode;
 const startM = positions.rightNode;
@@ -113,9 +113,9 @@ const deltaLat = startM[1] - startG[1];
 const midTargetG = [midLng - (deltaLng * offsetPercent), midLat - (deltaLat * offsetPercent)];
 const midTargetM = [midLng + (deltaLng * offsetPercent), midLat + (deltaLat * offsetPercent)];
 
-// Controlled northern translation offset (Prevents flying off-screen within 15s)
+// Controlled northern translation offset (Reduced from 0.004500 to prevent flying off-screen)
 const escapeDeltaLng = 0.000000;
-const escapeDeltaLat = 0.004500; 
+const escapeDeltaLat = 0.001800; 
 
 const finalTargetG = [midTargetG[0] + escapeDeltaLng, midTargetG[1] + escapeDeltaLat];
 const finalTargetM = [midTargetM[0] + escapeDeltaLng, midTargetM[1] + escapeDeltaLat];
@@ -148,7 +148,7 @@ function animateNodes(timestamp) {
         if (markerInstances["leftNode"]) markerInstances["leftNode"].setLngLat([currentG_Lng, currentG_Lat]);
         if (markerInstances["rightNode"]) markerInstances["rightNode"].setLngLat([currentM_Lng, currentM_Lat]);
     }
-    // PHASE 3: Cohesive exclusion trajectory northward with street alignment behavior (15s - 30s -> 15 seconds)
+    // PHASE 3: Cohesive exclusion trajectory northward with street alignment behavior (15s - 25s -> 10 seconds)
     else if (elapsed >= (DELAY_DURATION + CONVERGE_DURATION) && elapsed <= TOTAL_DURATION) {
         const progress = (elapsed - DELAY_DURATION - CONVERGE_DURATION) / ESCAPE_DURATION;
 
@@ -166,7 +166,7 @@ function animateNodes(timestamp) {
         if (markerInstances["leftNode"]) markerInstances["leftNode"].setLngLat([currentG_Lng, currentG_Lat]);
         if (markerInstances["rightNode"]) markerInstances["rightNode"].setLngLat([currentM_Lng, currentM_Lat]);
     }
-    // PHASE 4: Post-termination freeze matrix (Post 30s)
+    // PHASE 4: Post-termination freeze matrix (Post 25s)
     else if (elapsed > TOTAL_DURATION) {
         if (markerInstances["leftNode"]) markerInstances["leftNode"].setLngLat(finalTargetG);
         if (markerInstances["rightNode"]) markerInstances["rightNode"].setLngLat(finalTargetM);
@@ -183,5 +183,4 @@ map.on('load', () => {
         mapCanvas.style.filter = 'grayscale(0.6) contrast(1.1) brightness(0.95) hue-rotate(25deg)';
     }
     requestAnimationFrame(animateNodes);
-
 });
