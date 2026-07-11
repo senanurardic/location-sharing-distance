@@ -1,13 +1,13 @@
 // ============================
-// CALIBRATED MAP CONFIGURATION (ZOOM: 13.9 & CENTER REALIGNED)
+// CALIBRATED MAP CONFIGURATION (ZOOM: 14.1 & CENTER REALIGNED)
 // ============================
 const map = new maplibregl.Map({
     container: 'map',
     style: 'https://tiles.openfreemap.org/styles/liberty',
     center: [9.2103, 45.4815], 
-    zoom: 13.9,                
-    minZoom: 13.9,             
-    maxZoom: 13.9,             
+    zoom: 14.1,                
+    minZoom: 14.1,             
+    maxZoom: 14.1,             
     
     // EXPERIMENTAL CONTROLS: FIXED VIEWPORT MATRIX
     dragPan: false,            
